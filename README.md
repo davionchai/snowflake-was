@@ -36,6 +36,10 @@ After building the project, you can run the utility using the following command:
 ./snowflake-was
 ```
 
+## Workflow
+
+Refer to [workflow.md](./workflow.md)
+
 ## Configuring Snowflake-WAS
 
 🚧 WIP 🚧
