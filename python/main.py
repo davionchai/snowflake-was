@@ -67,7 +67,7 @@ def main():
                 # if queue is high, don't bother to downsize
                 if show_wh_result.queued >= queued_threshold:
                     if queue_checkpoint > default_queue_checkpoint:
-                        queue_checkpoint = min(queue_checkpoint + 1, 10)
+                        queue_checkpoint = min(queue_checkpoint + 1, 15)
                     else:
                         queue_checkpoint = default_queue_checkpoint + 1
                     print(f"checkpoint hit {queue_checkpoint}")
