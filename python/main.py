@@ -66,11 +66,17 @@ def main():
                 # escalation point algo
                 # if queue is high, don't bother to downsize
                 if show_wh_result.queued >= queued_threshold:
-                    queue_checkpoint = min(queue_checkpoint + 1, 10)
+                    if queue_checkpoint > default_queue_checkpoint:
+                        queue_checkpoint = min(queue_checkpoint + 1, 10)
+                    else:
+                        queue_checkpoint = default_queue_checkpoint + 1
                     print(f"checkpoint hit {queue_checkpoint}")
                 # if queue is not high, don't bother to upsize
                 elif show_wh_result.queued < queued_threshold:
-                    queue_checkpoint = max(queue_checkpoint - 1, 0)
+                    if queue_checkpoint < default_queue_checkpoint:
+                        queue_checkpoint = max(queue_checkpoint - 1, 0)
+                    else:
+                        queue_checkpoint = default_queue_checkpoint - 1
                     print(f"checkpoint hit {queue_checkpoint}")
 
                 sizing_event_triggered: bool = False
