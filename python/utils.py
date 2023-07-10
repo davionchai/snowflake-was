@@ -47,7 +47,7 @@ class WarehouseSize:
 
     def size_caster(self, size: str):
         match size:
-            case "X-Small", "xsmall":
+            case "X-Small" | "xsmall":
                 size = "xsmall"
             case "Small" | "small":
                 size = "small"
