@@ -36,7 +36,7 @@ func init() {
 	// subcommands tree here
 	rootCmd.AddCommand(was.WasCmd)
 
-	// global cli that can be shared accross subcommands
+	// global cli that can be shared across subcommands
 	rootCmd.PersistentFlags().StringVarP(
 		&yamlFile,
 		"file",

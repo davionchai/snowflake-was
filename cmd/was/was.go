@@ -119,7 +119,7 @@ func buildSfConfig() (*sf.Config, bool) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	// design pattern of gosnowflake using pointer for session_paramters assignment
+	// design pattern of gosnowflake using pointer for session_parameters assignment
 	query_tag := "snowflake-was"
 	session_parameters := map[string]*string{"QUERY_TAG": &query_tag}
 

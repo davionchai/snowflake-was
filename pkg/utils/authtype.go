@@ -32,6 +32,6 @@ func GetSnowflakeAuthType(snowflakeAuthenticator string) (sf.AuthType, error) {
 	case "username_password_mfa":
 		return sf.AuthTypeUsernamePasswordMFA, nil
 	default:
-		return -1, errors.New("Unkown snowflake authenticator")
+		return -1, errors.New("Unknown snowflake authenticator")
 	}
 }
