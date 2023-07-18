@@ -1,0 +1,25 @@
+version: '3.1'
+
+services:
+  snowflake-was:
+    build:
+      context: ..
+      dockerfile: ./build/Dockerfile
+    container_name: snowflake-was
+    restart: always
+    environment:
+      WAS_SF_USERNAME: jdoe@email.com
+      WAS_SF_PASSWORD: jdoe_password
+      WAS_SF_ACCOUNT: hello.us-east-1
+      WAS_SF_ROLE: wh_admin
+      WAS_SF_WAREHOUSE_RUN: compute_wh_admin
+      WAS_SF_AUTHENTICATOR: snowflake
+      WAS_SF_WAREHOUSE_AUTOSCALE: compute_wh_analysts
+      WAS_MIN_SIZE: xsmall
+      WAS_MAX_SIZE: xxlarge
+      WAS_QUEUED_THRESHOLD: 5
+      WAS_QUEUED_BASE_NUMBER: 2
+      WAS_DEFAULT_QUEUE_CHECKPOINT: 5
+      WAS_CYCLE_SECONDS: 60
+    command:
+      - was

@@ -1,0 +1,19 @@
+# Dependency directories (remove the comment below to include it)
+vendor/
+
+# Non-relevant infrastructure files
+build/
+deployments/
+
+# Go workspace file
+go.work
+
+# Arg file
+config.yaml
+.env
+
+# VSCode
+.vscode/
+
+# Go build output
+snowflake-was
