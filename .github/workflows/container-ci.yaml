@@ -10,12 +10,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
+      - name: Go SemVer Extraction
+        run: |
+          echo "GO_FULL_VER=${GITHUB_REF_NAME%.*}" >> $GITHUB_ENV
+          echo "GO_MINOR_VER=${GO_FULL_VER%.*}" >> $GITHUB_ENV
+          echo "GO_MAJOR_VER=${GO_MINOR_VER%.*}" >> $GITHUB_ENV
       - name: Container building
         run: |
           docker login --username davionchai --password ${{ secrets.GHCR_ALL_ACCESS }} ghcr.io
-          echo "Creating snowflake-was container with tags: [$GITHUB_REF_NAME, $GITHUB_SHA]"
+          echo "Creating snowflake-was container with tags: [${{ env.GO_MAJOR_VER }}, ${{ env.GO_MINOR_VER }}, ${{ env.GO_FULL_VER }}]"
           docker build \
             -t ghcr.io/davionchai/snowflake-was:latest \
-            -t ghcr.io/davionchai/snowflake-was:$GITHUB_REF_NAME \
+            -t ghcr.io/davionchai/snowflake-was:${{ env.GO_FULL_VER }} \
+            -t ghcr.io/davionchai/snowflake-was:${{ env.GO_MINOR_VER }} \
+            -t ghcr.io/davionchai/snowflake-was:${{ env.GO_MAJOR_VER }} \
             --file ./build/Dockerfile .
           docker push ghcr.io/davionchai/snowflake-was --all-tags
