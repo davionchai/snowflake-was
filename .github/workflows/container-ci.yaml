@@ -14,5 +14,5 @@ jobs:
         run: |
           docker login --username davionchai --password ${{ secrets.GHCR_ALL_ACCESS }} ghcr.io
           echo "Creating snowflake-was container with tags: [$GITHUB_REF_NAME, $GITHUB_SHA]"
-          docker build -t ghcr.io/davionchai/snowflake-was:latest -t ghcr.io/davionchai/snowflake-was:$GITHUB_REF_NAME ghcr.io/davionchai/snowflake-was:$GITHUB_SHA --file Dockerfile ..
+          docker build -t ghcr.io/davionchai/snowflake-was:latest -t ghcr.io/davionchai/snowflake-was:$GITHUB_REF_NAME -t ghcr.io/davionchai/snowflake-was:$GITHUB_SHA --file Dockerfile ..
           docker push ghcr.io/davionchai/snowflake-was --all-tags
