@@ -13,8 +13,10 @@ jobs:
       - name: Go SemVer Extraction
         run: |
           echo "GO_FULL_VER=$GITHUB_REF_NAME" >> $GITHUB_ENV
-          echo "GO_MINOR_VER=${{{ env.GO_FULL_VER }}%.*}" >> $GITHUB_ENV
-          echo "GO_MAJOR_VER=${{{ env.GO_MINOR_VER }}%.*}" >> $GITHUB_ENV
+          GO_MINOR_VER=${GO_FULL_VER%.*}
+          echo "GO_MINOR_VER=$GO_MINOR_VER" >> $GITHUB_ENV
+          GO_MAJOR_VER=${GO_MINOR_VER%.*}
+          echo "GO_MAJOR_VER=$GO_MAJOR_VER" >> $GITHUB_ENV
       - name: Container building
         run: |
           docker login --username davionchai --password ${{ secrets.GHCR_ALL_ACCESS }} ghcr.io
