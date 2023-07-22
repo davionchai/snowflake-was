@@ -1,0 +1,183 @@
+images:
+  # Default was repository
+  defaultWasRepository: ghcr.io/davionchai/snowflake-was
+  defaultWasTag: latest
+  defaultWasDigest: ~
+  was:
+    repository: ~
+    tag: ~
+    # Specifying digest takes precedence over tag.
+    digest: ~
+    pullPolicy: IfNotPresent
+
+# Select certain nodes for snowflake-was pods globally.
+nodeSelector: {}
+affinity: {}
+tolerations: []
+topologySpreadConstraints: []
+# Add common labels to all objects and pods defined in this chart.
+labels: {}
+# Extra annotations to apply to all pods
+annotations: {}
+
+# User and group of was user
+uid: 2000
+gid: 0
+
+was:
+  # Enable Warehouse Auto Scaling
+  enabled: true
+  # Command to use when running was (templated).
+  command: ~
+  # Args to use when running was (templated).
+  args:
+    - was
+  # Update Strategy when was is deployed as a Deployment
+  strategy:
+    rollingUpdate:
+      maxSurge: "100%"
+      maxUnavailable: "50%"
+  # file with changes will trigger redeploy
+  checksum:
+    - was-secret: "/secrets/was-secret.yaml"
+
+  # env to export into container
+  env: # []
+    - name: WAS_SF_WAREHOUSE_RUN
+      value: compute_wh_admin
+    - name: WAS_SF_AUTHENTICATOR
+      value: snowflake
+    - name: WAS_SF_WAREHOUSE_AUTOSCALE
+      value: compute_wh_analysts
+    - name: WAS_MIN_SIZE
+      value: large
+    - name: WAS_MAX_SIZE
+      value: xxxlarge
+    - name: WAS_QUEUED_THRESHOLD
+      value: 5
+    - name: WAS_QUEUED_BASE_NUMBER
+      value: 2
+    - name: WAS_DEFAULT_QUEUE_CHECKPOINT
+      value: 5
+    - name: WAS_CYCLE_SECONDS
+      value: 60
+
+  envFrom: []
+
+  # This setting tells kubernetes that its ok to evict
+  # when it wants to scale a node down.
+  safeToEvict: true
+  # Labels specific to was objects and pods
+  labels: {}
+  # Annotations to add to was kubernetes deployment.
+  annotations: {}
+  # infrastructure administrative specific
+  #   leave null if you don't know what is this
+  runtimeClassName: ~
+  priorityClassName: ~
+  # Select certain nodes for was pods.
+  nodeSelector: {}
+  affinity: {}
+  tolerations: []
+  topologySpreadConstraints: []
+
+  # hostAliases to use in was pods.
+  # See:
+  # https://kubernetes.io/docs/concepts/services-networking/add-entries-to-pod-etc-hosts-with-host-aliases/
+  hostAliases: []
+  # - ip: "127.0.0.2"
+  #   hostnames:
+  #     - "test.hostname.one"
+  # - ip: "127.0.0.3"
+  #   hostnames:
+  #     - "test.hostname.two"
+
+  # Grace period for was to finish after SIGTERM is sent from kubernetes
+  terminationGracePeriodSeconds: 600
+
+  # When not set, the values defined in the global securityContext will be used
+  securityContext: {}
+  #  runAsUser: 2000
+  #  fsGroup: 2000
+  #  runAsGroup: 3000
+
+  # Add additional init containers into was.
+  extraInitContainers: []
+  # Add additional containers into was.
+  extraContainers: []
+
+  resources: {}
+  #  limits:
+  #   cpu: 1000m
+  #   memory: 1024MiB
+  #  requests:
+  #   cpu: 1000m
+  #   memory: 1024iB
+
+  volumeMounts: []
+  # - mountPath: "/opt/script/vol1"
+  #   name: vol1
+  volumes: []
+  # - emptyDir: {}
+  #   name: vol1
+
+  secrets:
+    # Specifies whether a ServiceAccount should be created
+    create: true
+    # One of: local, cloud
+    type: local
+    # Annotations to add to was kubernetes service account.
+    annotations:
+      # default annotation for helm to create secrets before creating other k8s objects
+      "helm.sh/hook": "pre-install"
+      "helm.sh/hook-delete-policy": "before-hook-creation"
+      "helm.sh/hook-weight": "0"
+    # if type is local
+    # put the following as secrets
+    localData: # []
+      - name: WAS_SF_USERNAME
+        value: jdoe@email.com
+      - name: WAS_SF_PASSWORD
+        value: this_is_john_doe
+      - name: WAS_SF_ACCOUNT
+        value: hello.us-east-1
+      - name: WAS_SF_ROLE
+        value: wh_admin
+    # if type is cloud (ExternalSecrets)
+    #   aws secrets manager only for now
+    spec:
+      # secrets manager region
+      region: us-east-1
+      # key: secret name
+      # property: key in secrets manager resource
+      # name: to be referred in kubernetes file
+      data: []
+      # - key: aws-secrets-manager-resource-name
+      #   property: WAS_SF_USERNAME
+      #   name: was-sf-username
+      # - key: aws-secrets-manager-resource-name
+      #   property: WAS_SF_PASSWORD
+      #   name: was-sf-password
+      # - key: aws-secrets-manager-resource-name
+      #   property: WAS_SF_ACCOUNT
+      #   name: was-sf-account
+      # - key: aws-secrets-manager-resource-name
+      #   property: WAS_SF_ROLE
+      #   name: was-sf-role
+
+  # Create ServiceAccount
+  serviceAccount:
+    # Specifies whether a ServiceAccount should be created
+    create: true
+    # The name of the ServiceAccount to use.
+    # If not set and create is true, a name is generated using the release name
+    name: ~
+
+    # Annotations to add to was kubernetes service account.
+    annotations: {}
+
+# Define any ResourceQuotas for namespace
+quotas: {}
+
+# Define default/max/min values for pods and containers in namespace
+limits: []

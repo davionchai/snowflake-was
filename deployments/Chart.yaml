@@ -1,0 +1,17 @@
+apiVersion: v2
+name: snowflake-was
+version: 0.1.0
+appVersion: 0.1.0
+type: application
+description: A Helm chart to deploy snowflake-was application
+home: https://github.com/davionchai/snowflake-was
+sources:
+  - https://github.com/davionchai/snowflake-was
+keywords:
+  - snowflake-was
+  - snowflake
+  - data-warehouse
+  - data-engineering
+maintainers:
+  - email: davionchai@gmail.com
+    name: davionchai
