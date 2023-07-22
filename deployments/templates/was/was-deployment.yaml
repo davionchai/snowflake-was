@@ -1,0 +1,107 @@
+{{- if .Values.was.enabled }}
+{{- $nodeSelector := or .Values.was.nodeSelector .Values.nodeSelector }}
+{{- $affinity := or .Values.was.affinity .Values.affinity }}
+{{- $tolerations := or .Values.was.tolerations .Values.tolerations }}
+{{- $topologySpreadConstraints := or .Values.was.topologySpreadConstraints .Values.topologySpreadConstraints }}
+{{- $securityContext := include "security_context" . }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-was
+  labels:
+    tier: snowflake-was
+    component: was
+    release: {{ .Release.Name }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    heritage: {{ .Release.Service }}
+    {{- with .Values.labels }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
+  {{- if .Values.was.annotations }}
+  annotations: {{- toYaml .Values.was.annotations | nindent 4 }}
+  {{- end }}
+spec:
+  selector:
+    matchLabels:
+      tier: snowflake-was
+      component: was
+      release: {{ .Release.Name }}
+  {{- if .Values.was.strategy }}
+  strategy: {{- toYaml .Values.was.strategy | nindent 4 }}
+  {{- end }}
+  template:
+    metadata:
+      labels:
+        tier: snowflake-was
+        component: was
+        release: {{ .Release.Name }}
+        {{- if or (.Values.labels) (.Values.was.labels) }}
+          {{- mustMerge .Values.was.labels .Values.labels | toYaml | nindent 8 }}
+        {{- end }}
+      annotations:
+        checksum/was-secret: {{ include (print $.Template.BasePath "/was/was-secret.yaml") . | sha256sum }}
+        {{- if .Values.was.safeToEvict }}
+        cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+        {{- end }}
+        {{- if .Values.was.annotations }}
+          {{- toYaml .Values.was.annotations | nindent 8 }}
+        {{- end }}
+        {{- if .Values.annotations }}
+          {{- toYaml .Values.annotations | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- if .Values.was.runtimeClassName }}
+      runtimeClassName: {{ .Values.was.runtimeClassName }}
+      {{- end }}
+      {{- if .Values.was.priorityClassName }}
+      priorityClassName: {{ .Values.was.priorityClassName }}
+      {{- end }}
+      nodeSelector: {{- toYaml $nodeSelector | nindent 8 }}
+      affinity:
+        {{- if $affinity }}
+          {{- toYaml $affinity | nindent 8 }}
+        {{- else }}
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - podAffinityTerm:
+              labelSelector:
+                matchLabels:
+                  component: was
+              topologyKey: kubernetes.io/hostname
+            weight: 100
+        {{- end }}
+      tolerations: {{- toYaml $tolerations | nindent 8 }}
+      topologySpreadConstraints: {{- toYaml $topologySpreadConstraints | nindent 8 }}
+      {{- if .Values.was.hostAliases }}
+      hostAliases: {{- toYaml .Values.was.hostAliases | nindent 8 }}
+      {{- end }}
+      terminationGracePeriodSeconds: {{ default 60 .Values.was.terminationGracePeriodSeconds }}
+      restartPolicy: Always
+      serviceAccountName: {{ include "was.serviceAccountName" . }}
+      securityContext: {{ $securityContext | nindent 8 }}
+      {{- if .Values.was.extraInitContainers }}
+      initContainers: {{- toYaml .Values.was.extraInitContainers | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: was
+          image: {{ template "was_image" . }}
+          imagePullPolicy: {{ .Values.images.was.pullPolicy }}
+          {{- if .Values.was.command }}
+          command: {{ tpl (toYaml .Values.was.command) . | nindent 12 }}
+          {{- end }}
+          {{- if .Values.was.args }}
+          args: {{ tpl (toYaml .Values.was.args) . | nindent 12 }}
+          {{- end }}
+          resources: {{- toYaml .Values.was.resources | nindent 12 }}
+          {{- if .Values.was.volumeMounts }}
+          volumeMounts: {{- toYaml .Values.was.volumeMounts | nindent 12 }}
+          {{- end }}
+          envFrom: {{- include "was_env_from" . | default "[]" | nindent 12 }}
+          env: {{- include "was_env" . | default "[]" | indent 12 }}
+        {{- if .Values.was.extraContainers }}
+          {{- toYaml .Values.was.extraContainers | nindent 8 }}
+        {{- end }}
+      {{- if .Values.was.volumes }}
+      volumes: {{- toYaml .Values.was.volumes | nindent 8 }}
+      {{- end }}
+{{- end }}
