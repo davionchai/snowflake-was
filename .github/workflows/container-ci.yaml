@@ -17,9 +17,16 @@ jobs:
           echo "GO_MINOR_VER=$GO_MINOR_VER" >> $GITHUB_ENV
           GO_MAJOR_VER=${GO_MINOR_VER%.*}
           echo "GO_MAJOR_VER=$GO_MAJOR_VER" >> $GITHUB_ENV
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: davionchai
+          password: ${{ secrets.GHCR_ALL_ACCESS }}
+
       - name: Container building
         run: |
-          docker login --username davionchai --password ${{ secrets.GHCR_ALL_ACCESS }} ghcr.io
           echo "Creating snowflake-was container with tags: [${{ env.GO_MAJOR_VER }}, ${{ env.GO_MINOR_VER }}, ${{ env.GO_FULL_VER }}]"
           docker build \
             -t ghcr.io/davionchai/snowflake-was:latest \
