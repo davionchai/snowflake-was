@@ -8,7 +8,7 @@ on:
       - deployments/**
 
 jobs:
-  release:
+  helm_push:
     permissions:
       packages: write
     runs-on: ubuntu-latest
