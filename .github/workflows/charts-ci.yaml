@@ -1,0 +1,40 @@
+name: Helm Charts CI for ghcr.io
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - deployments/**
+
+jobs:
+  release:
+    permissions:
+      packages: write
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+
+      - name: Configure Helm
+        uses: azure/setup-helm@v3
+
+      - name: Prepare Environment
+        run: |
+          echo "CHART_VERSION=$(grep 'version:' ./deployments/Chart.yaml | tail -n1 | awk '{ print $2}')" >> $GITHUB_ENV
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: davionchai
+          password: ${{ secrets.GHCR_ALL_ACCESS }}
+
+      - name: Publish Helm chart to GHCR
+        run: |
+          helm package ./deployments/
+          echo "Creating snowlfake-was helm chart with version: [${{ env.CHART_VERSION }}]"
+          helm push snowflake-was-${{ env.CHART_VERSION }}.tgz oci://ghcr.io/davionchai/charts/
+          rm snowflake-was-${{ env.CHART_VERSION }}.tgz
