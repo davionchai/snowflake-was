@@ -36,5 +36,5 @@ jobs:
         run: |
           helm package ./deployments/
           echo "Creating snowlfake-was helm chart with version: [${{ env.CHART_VERSION }}]"
-          helm push snowflake-was-${{ env.CHART_VERSION }}.tgz oci://ghcr.io/davionchai/charts/
+          helm push snowflake-was-${{ env.CHART_VERSION }}.tgz oci://ghcr.io/davionchai/charts
           rm snowflake-was-${{ env.CHART_VERSION }}.tgz
