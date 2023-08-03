@@ -55,25 +55,40 @@ fsGroup: {{ .Values.gid }}
 {{- define "was_env" }}
   {{- range $i, $env := .Values.was.env }}
 - name: {{ $env.name }}
+    {{- if $env.value }}
   value: {{ $env.value | quote }}
+    {{- else if $env.valueFrom }}
+  valueFrom:
+      {{- if $env.valueFrom.secretKeyRef }}
+    secretKeyRef:
+      name: {{ $env.valueFrom.secretKeyRef.name | quote }}
+      key: {{ $env.valueFrom.secretKeyRef.key | quote }}
+      {{- else if $env.valueFrom.configMapKeyRef }}
+    configMapKeyRef:
+      name: {{ $env.valueFrom.secretKeyRef.name | quote }}
+      key: {{ $env.valueFrom.secretKeyRef.key | quote }}
+      {{- end }}  
+    {{- end }}
   {{- end }}
 
   {{- $releaseName := .Release.Name -}}
-  {{- if (and .Values.was.secrets.localData (eq .Values.was.secrets.type "local")) }}
-    {{- range $i, $config := .Values.was.secrets.localData }}
+  {{- if .Values.was.secrets.create }}
+    {{- if (and .Values.was.secrets.localData (eq .Values.was.secrets.type "local")) }}
+      {{- range $i, $config := .Values.was.secrets.localData }}
 - name: {{ $config.name }}
   valueFrom: 
     secretKeyRef:
       name: {{ printf "%s-secrets" $releaseName }}
       key: {{ $config.name }}
-    {{- end }}
-  {{- else if (and .Values.was.secrets.spec.data (eq .Values.was.secrets.type "cloud")) }}
-    {{- range $i, $config := .Values.was.secrets.spec.data }}
+      {{- end }}
+    {{- else if (and .Values.was.secrets.spec.data (eq .Values.was.secrets.type "cloud")) }}
+      {{- range $i, $config := .Values.was.secrets.spec.data }}
 - name: {{ $config.property }}
   valueFrom: 
     secretKeyRef:
       name: {{ printf "%s-secrets" $releaseName }}
       key: {{ $config.name }}
+      {{- end }}
     {{- end }}
   {{- end }}
 {{- end }}
