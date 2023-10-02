@@ -41,6 +41,7 @@ type ShowWarehouseResult struct {
 	Failed          int
 	Suspended       int
 	Uuid            string
+	Budget		string
 }
 
 func OperateWAS(sfConfig *sf.Config, appConfig *arguments.WasArguments) {
@@ -90,6 +91,7 @@ func OperateWAS(sfConfig *sf.Config, appConfig *arguments.WasArguments) {
 				&rowResult.Failed,
 				&rowResult.Suspended,
 				&rowResult.Uuid,
+				&rowResult.Budget,
 			); err != nil {
 				log.Fatalf("Error at scanning result %v", err)
 			}
