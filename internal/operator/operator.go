@@ -1,6 +1,7 @@
 package operator
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"math"
@@ -41,7 +42,7 @@ type ShowWarehouseResult struct {
 	Failed          int
 	Suspended       int
 	Uuid            string
-	Budget		string
+	Budget          sql.NullString
 }
 
 func OperateWAS(sfConfig *sf.Config, appConfig *arguments.WasArguments) {
