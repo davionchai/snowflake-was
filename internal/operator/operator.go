@@ -1,7 +1,7 @@
 package operator
 
 import (
-	"database/sql"
+	"context"
 	"fmt"
 	"log"
 	"math"
@@ -17,96 +17,22 @@ import (
 )
 
 type ShowWarehouseResult struct {
-	Name            string
-	State           string
-	Type            string
-	Size            string
-	Running         int
-	Queued          int
-	IsDefault       string
-	IsCurrent       string
-	AutoSuspend     int
-	AutoResume      string
-	Available       string
-	Provisioning    string
-	Quiescing       string
-	Other           string
-	CreatedOn       time.Time
-	ResumedOn       time.Time
-	UpdatedOn       time.Time
-	Owner           string
-	Comment         string
-	ResourceMonitor string
-	Actives         int
-	Pendings        int
-	Failed          int
-	Suspended       int
-	Uuid            string
-	Budget          sql.NullString
+	Name   string
+	Size   string
+	Queued int
 }
 
 func OperateWAS(sfConfig *sf.Config, appConfig *arguments.WasArguments) {
 	queueCheckpoint := appConfig.DefaultQueueCheckpoint
+	conn, err := databases.NewSnowflakeConn(sfConfig)
+	if err != nil {
+		log.Fatalf("failed to create DSN from Config: %v, err: %v", sfConfig, err)
+	}
+	defer conn.DB.Close()
+
 	for {
-		conn, err := databases.NewSnowflakeConn(sfConfig)
-		if err != nil {
-			log.Fatalf("failed to create DSN from Config: %v, err: %v", sfConfig, err)
-		}
-		defer conn.DB.Close()
+		showRowResult := getWarehouseStatus(conn, strings.ToLower(appConfig.SnowflakeWarehouseAutoscale))
 
-		// show warehouses
-		showQuery := fmt.Sprintf("show warehouses like '%s';", strings.ToLower(appConfig.SnowflakeWarehouseAutoscale))
-		showRows, err := conn.RunQuery(showQuery)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer showRows.Close()
-
-		var showRowResults []ShowWarehouseResult
-
-		for showRows.Next() {
-			var rowResult ShowWarehouseResult
-			if err := showRows.Scan(
-				&rowResult.Name,
-				&rowResult.State,
-				&rowResult.Type,
-				&rowResult.Size,
-				&rowResult.Running,
-				&rowResult.Queued,
-				&rowResult.IsDefault,
-				&rowResult.IsCurrent,
-				&rowResult.AutoSuspend,
-				&rowResult.AutoResume,
-				&rowResult.Available,
-				&rowResult.Provisioning,
-				&rowResult.Quiescing,
-				&rowResult.Other,
-				&rowResult.CreatedOn,
-				&rowResult.ResumedOn,
-				&rowResult.UpdatedOn,
-				&rowResult.Owner,
-				&rowResult.Comment,
-				&rowResult.ResourceMonitor,
-				&rowResult.Actives,
-				&rowResult.Pendings,
-				&rowResult.Failed,
-				&rowResult.Suspended,
-				&rowResult.Uuid,
-				&rowResult.Budget,
-			); err != nil {
-				log.Fatalf("Error at scanning result %v", err)
-			}
-			showRowResults = append(showRowResults, rowResult)
-		}
-		if err := showRows.Err(); err != nil {
-			log.Fatalf("Error at scanning result %v", err)
-		}
-		if len(showRowResults) > 1 {
-			log.Fatalf(
-				"Only 1 warehouse is allowed. Found [%v] warehouses.", len(showRowResults),
-			)
-		}
-		showRowResult := &showRowResults[0]
 		warehouseCenter, err := utils.NewWarehouseCenter(showRowResult.Size, appConfig.MinSize, appConfig.MaxSize)
 		if err != nil {
 			log.Fatal(err)
@@ -183,4 +109,49 @@ func max[T constraints.Ordered](a, b T) T {
 
 func intPow(x, y int) int {
 	return int(math.Pow(float64(x), float64(y)))
+}
+
+func getWarehouseStatus(conn *databases.SnowflakeConn, autoscale string) *ShowWarehouseResult {
+	// show warehouses
+	number_of_statements := 2
+	ctx, _ := sf.WithMultiStatement(context.Background(), number_of_statements)
+
+	showQuery := fmt.Sprintf(`
+		show warehouses like '%s';
+		select "name", "size", "queued" from table(result_scan(last_query_id()));
+	`, autoscale)
+
+	showRows, err := conn.DB.QueryContext(ctx, showQuery)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer showRows.Close()
+
+	var showRowResults []ShowWarehouseResult
+
+	for showRows.NextResultSet() {
+		for showRows.Next() {
+			var rowResult ShowWarehouseResult
+			if err := showRows.Scan(
+				&rowResult.Name,
+				&rowResult.Size,
+				&rowResult.Queued,
+			); err != nil {
+				log.Fatalf("Error at scanning result %v", err)
+			}
+			showRowResults = append(showRowResults, rowResult)
+		}
+	}
+
+	if err := showRows.Err(); err != nil {
+		log.Fatalf("Error at scanning result %v", err)
+	}
+
+	if len(showRowResults) > 1 {
+		log.Fatalf(
+			"Only 1 warehouse is allowed. Found [%v] warehouses.", len(showRowResults),
+		)
+	}
+
+	return &showRowResults[0]
 }
