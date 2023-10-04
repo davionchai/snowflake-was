@@ -2,7 +2,6 @@ package operator
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"log"
 	"math"
@@ -25,10 +24,14 @@ type ShowWarehouseResult struct {
 
 func OperateWAS(sfConfig *sf.Config, appConfig *arguments.WasArguments) {
 	queueCheckpoint := appConfig.DefaultQueueCheckpoint
+	conn, err := databases.NewSnowflakeConn(sfConfig)
+	if err != nil {
+		log.Fatalf("failed to create DSN from Config: %v, err: %v", sfConfig, err)
+	}
+	defer conn.DB.Close()
 
 	for {
-		db := initSnowflakeDB(sfConfig)
-		showRowResult := getWarehouseStatus(db, strings.ToLower(appConfig.SnowflakeWarehouseAutoscale))
+		showRowResult := getWarehouseStatus(conn, strings.ToLower(appConfig.SnowflakeWarehouseAutoscale))
 
 		warehouseCenter, err := utils.NewWarehouseCenter(showRowResult.Size, appConfig.MinSize, appConfig.MaxSize)
 		if err != nil {
@@ -80,7 +83,7 @@ func OperateWAS(sfConfig *sf.Config, appConfig *arguments.WasArguments) {
 				appConfig.SnowflakeWarehouseAutoscale,
 				warehouseCenter.Size,
 			)
-			_, err := db.Exec(alterQuery)
+			_, err := conn.DB.Exec(alterQuery)
 			if err != nil {
 				log.Fatal(err)
 			}
@@ -108,17 +111,7 @@ func intPow(x, y int) int {
 	return int(math.Pow(float64(x), float64(y)))
 }
 
-func initSnowflakeDB(sfConfig *sf.Config) *sql.DB {
-	conn, err := databases.NewSnowflakeConn(sfConfig)
-	if err != nil {
-		log.Fatalf("failed to create DSN from Config: %v, err: %v", sfConfig, err)
-	}
-	defer conn.DB.Close()
-
-	return conn.DB
-}
-
-func getWarehouseStatus(db *sql.DB, autoscale string) *ShowWarehouseResult {
+func getWarehouseStatus(conn *databases.SnowflakeConn, autoscale string) *ShowWarehouseResult {
 	// show warehouses
 	number_of_statements := 2
 	ctx, _ := sf.WithMultiStatement(context.Background(), number_of_statements)
@@ -128,7 +121,7 @@ func getWarehouseStatus(db *sql.DB, autoscale string) *ShowWarehouseResult {
 		select "name", "size", "queued" from table(result_scan(last_query_id()));
 	`, autoscale)
 
-	showRows, err := db.QueryContext(ctx, showQuery)
+	showRows, err := conn.DB.QueryContext(ctx, showQuery)
 	if err != nil {
 		log.Fatal(err)
 	}
